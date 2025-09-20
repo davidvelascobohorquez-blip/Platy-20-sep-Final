@@ -121,7 +121,7 @@ export default function DemoPage() {
       } else {
         alert(j?.error || 'No se pudo generar el plan. Intenta de nuevo.')
       }
-    } catch (e) {
+    } catch {
       alert('Ups… algo falló. Verifica tu conexión e intenta otra vez.')
     } finally {
       setGenerating(false)
@@ -132,7 +132,7 @@ export default function DemoPage() {
     if (!plan) return
     setPdfGenerating(true)
     try {
-      // ⬇️ FIX: makePlanPdf ahora recibe un objeto de opciones
+      // makePlanPdf devuelve un Blob en esta implementación
       const blob = await makePlanPdf(plan, {
         lang: 'es',
         brand: site.brand ?? 'Platy',
@@ -140,7 +140,7 @@ export default function DemoPage() {
       })
       const url = URL.createObjectURL(blob)
       setPdfUrl(url)
-    } catch (e) {
+    } catch {
       alert('No pudimos generar el PDF. Intenta de nuevo.')
     } finally {
       setPdfGenerating(false)
@@ -154,9 +154,10 @@ export default function DemoPage() {
     }
   }, [pdfUrl])
 
-  // Helpers UI toggles
-  const toggleFromArray = (arr: string[], val: string) =>
+  // Helpers UI toggles  (FIX: encerrar en paréntesis y terminar con ;) 
+  const toggleFromArray = (arr: string[], val: string) => (
     arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]
+  );
 
   return (
     <main className="container py-6 md:py-10">
@@ -412,5 +413,208 @@ export default function DemoPage() {
                     {(['Ahorrar', 'Variedad', 'Rápido', 'Balanceado'] as const).map((o) => (
                       <button
                         key={o}
-                       
+                        onClick={() => setObjetivo(o)}
+                        className={`px-4 py-2 rounded-2xl border transition-colors ${
+                          objetivo === o ? 'bg-amber border-amber text-charcoal' : 'border-line hover:border-amber'
+                        }`}
+                      >
+                        {o}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid sm:grid-cols-[220px,1fr] gap-3 items-center">
+                  <label className="text-sm text-stone">Presupuesto semanal (COP, opcional)</label>
+                  <input
+                    value={presupuesto}
+                    onChange={(e) => setPresupuesto(e.target.value)}
+                    placeholder="Ej: 120000"
+                    className="rounded-2xl border border-line px-4 py-3"
+                  />
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <Button onClick={generarPlan} disabled={generating}>
+                    {generating ? 'Cocinando tu menú…' : 'Confirmar y generar plan'}
+                  </Button>
+                </div>
+                <p className="text-xs text-stone mt-2">
+                  Generaremos 7 días con cantidades, lista consolidada y costos estimados por categoría.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Columna resumen en vivo */}
+          <div className="bg-card rounded-3xl shadow-soft border border-line p-6 h-fit sticky top-4">
+            <h3 className="text-xl font-bold">Resumen</h3>
+            <ul className="mt-3 text-graphite text-sm space-y-1">
+              <li><span className="text-stone">Ciudad:</span> {ciudad || '—'}</li>
+              <li><span className="text-stone">Personas:</span> {personas ?? '—'}</li>
+              <li><span className="text-stone">Tipo:</span> {comidas.join(', ') || '—'}</li>
+              <li><span className="text-stone">Tiempo:</span> {modo || '—'}</li>
+              <li><span className="text-stone">Equipo:</span> {equipo || '—'}</li>
+              <li><span className="text-stone">Dieta:</span> {dieta}</li>
+              <li><span className="text-stone">Alergias:</span> {alergias.join(', ') || 'Ninguna'}</li>
+              <li><span className="text-stone">Objetivo:</span> {objetivo}</li>
+              <li><span className="text-stone">Presupuesto:</span> {presupuesto ? fmtCOP(Number(presupuesto.replace(/[^\d]/g, ''))) : '—'}</li>
+              <li><span className="text-stone">Prefs:</span> {prefs.join(', ') || '—'}</li>
+            </ul>
+            <p className="text-xs text-stone mt-3">
+              Ajusta lo que necesites y continúa. Te daremos cantidades exactas y una lista con totales.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Resultado */}
+      {ready && plan && (
+        <div className="mt-8 space-y-6" style={{ animation: 'fadeIn .25s ease' }}>
+          {/* Portada / resumen ejecutivo */}
+          <div className="bg-card rounded-3xl shadow-soft border border-line p-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-extrabold">
+                  Menú semanal — {plan.meta.ciudad} · {plan.meta.meal} · {plan.meta.personas} pers · {plan.meta.modo}
+                </h2>
+                <p className="text-sm text-stone">
+                  Incluye cantidades (g/ml/ud), lista consolidada y costos por categoría.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={generarYPrevisualizarPDF} disabled={pdfGenerating}>
+                  {pdfGenerating ? 'Armando tu PDF…' : 'Generar/Previsualizar PDF'}
+                </Button>
+                {pdfUrl && (
+                  <>
+                    <a href={pdfUrl} download={`PLATY_menu_${plan.meta.ciudad}.pdf`}>
+                      <Button>Descargar PDF</Button>
+                    </a>
+                    <a href={whatsUrl} target="_blank" rel="noreferrer">
+                      <Button>Compartir por WhatsApp</Button>
+                    </a>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {pdfUrl && (
+              <div className="mt-4 border border-line rounded-2xl overflow-hidden">
+                <iframe src={pdfUrl} className="w-full h-[560px] bg-white" />
+              </div>
+            )}
+          </div>
+
+          {/* Calendario 7 días */}
+          <div className="bg-card rounded-3xl shadow-soft border border-line p-6">
+            <h3 className="text-xl font-bold">Día 1–7</h3>
+            <div className="mt-4 grid md:grid-cols-2 gap-4">
+              {plan.menu.map((d) => (
+                <div key={d.dia} className="rounded-2xl border border-line p-4">
+                  <div className="font-semibold">Día {d.dia}: {d.plato}</div>
+                  <div className="text-sm text-graphite mt-1">
+                    <span className="text-stone">Ingredientes:</span>{' '}
+                    {d.ingredientes.map((i) => `${i.qty} ${i.unit} ${i.name}`).join(', ')}
+                  </div>
+                  <div className="text-sm text-graphite mt-1">
+                    <span className="text-stone">Pasos:</span> {d.pasos.join(' · ')}
+                  </div>
+                  <div className="text-sm text-black/80 mt-1">💡 {d.tip}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Lista consolidada + costos */}
+          <div className="bg-card rounded-3xl shadow-soft border border-line p-6">
+            <h3 className="text-xl font-bold">Lista de compras (consolidada)</h3>
+            <div className="mt-3 grid md:grid-cols-3 gap-4 text-sm">
+              {Object.entries(plan.lista).map(([cat, items]) => (
+                <div key={cat} className="rounded-2xl border border-line p-4">
+                  <div className="font-semibold mb-1">{cat}</div>
+                  <ul className="text-graphite space-y-1">
+                    {items.map((i, idx) => (
+                      <li key={idx} className="flex items-center justify-between gap-2">
+                        <span>{i.qty} {i.unit} {i.name}</span>
+                        <span className="text-stone">{i.estCOP ? fmtCOP(i.estCOP) : '—'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            {/* Totales */}
+            <div className="mt-5 grid md:grid-cols-3 gap-4 text-sm">
+              {Object.entries(plan.costos.porCategoria).map(([cat, val]) => (
+                <div key={cat} className="rounded-2xl border border-line p-4 flex items-center justify-between">
+                  <div className="font-semibold">{cat}</div>
+                  <div className="text-graphite">{fmtCOP(val)}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-2xl border border-amber p-4 flex items-center justify-between">
+              <div className="font-semibold">Total estimado ({plan.meta.ciudad})</div>
+              <div className="text-2xl font-extrabold">{fmtCOP(plan.costos.total)}</div>
+            </div>
+            <p className="text-xs text-stone mt-2">* {plan.costos.nota}</p>
+          </div>
+
+          {/* Dónde comprar */}
+          <div className="bg-card rounded-3xl shadow-soft border border-line p-6">
+            <h3 className="text-xl font-bold">Dónde comprar (sugerido)</h3>
+            <p className="text-graphite mt-1">
+              Sugerimos <strong>{plan.tiendas.sugerida.nombre}</strong> ({plan.tiendas.sugerida.tipo}). Alternativas:{' '}
+              {plan.tiendas.opciones.map((o) => o.nombre).join(', ')}.
+            </p>
+            <a href={plan.tiendas.mapsUrl} target="_blank" className="inline-block mt-3 underline decoration-amber decoration-4 underline-offset-4">
+              Ver en Google Maps
+            </a>
+          </div>
+
+          {/* Batch cooking */}
+          <div className="bg-card rounded-3xl shadow-soft border border-line p-6">
+            <div className="font-semibold">Batch cooking</div>
+            <div className="text-graphite text-sm">Base A: {plan.batch.baseA}</div>
+            <div className="text-graphite text-sm">Base B: {plan.batch.baseB}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlays de carga */}
+      {generating && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-3xl p-6 w-[90%] max-w-[420px] text-center shadow-xl border border-black/10">
+            <div className="text-4xl animate-bounce-slow">⏱️</div>
+            <h4 className="text-xl font-bold mt-2">Estamos cocinando tu menú…</h4>
+            <p className="text-sm text-graphite mt-1">
+              Dando vueltas a las ollas y regateando en la plaza… esto tarda unos segunditos 😉
+            </p>
+          </div>
+        </div>
+      )}
+
+      {pdfGenerating && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-3xl p-6 w-[90%] max-w-[420px] text-center shadow-xl border border-black/10">
+            <div className="mx-auto h-10 w-10 border-4 border-black/10 border-t-amber rounded-full animate-spin" />
+            <h4 className="text-xl font-bold mt-3">Armando tu PDF…</h4>
+            <p className="text-sm text-graphite mt-1">Ordenando ingredientes y sumando totales.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Animaciones */}
+      <style jsx global>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+        .animate-bounce-slow { animation: bounce 1.4s infinite; }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+      `}</style>
+    </main>
+  )
+}
 
