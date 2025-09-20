@@ -1,14 +1,15 @@
+// app/thanks/page.tsx
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-// Fuerza render dinámico y desactiva revalidación para evitar errores de prerender
+// fuerza render dinámico y evita ISR en esta ruta
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-function ThanksInner() {
+function ThanksContent() {
   const sp = useSearchParams()
   const [state, setState] = useState<'loading' | 'ok' | 'fail'>('loading')
   const id = sp.get('id') || ''
@@ -17,10 +18,7 @@ function ThanksInner() {
     async function verifyById(txid: string) {
       try {
         const res = await fetch(`/api/wompi/verify?id=${encodeURIComponent(txid)}`, { cache: 'no-store' })
-        if (res.ok) {
-          setState('ok')
-          return true
-        }
+        if (res.ok) { setState('ok'); return true }
       } catch {}
       return false
     }
@@ -34,7 +32,7 @@ function ThanksInner() {
       } catch {}
       return false
     }
-    ;(async () => {
+    (async () => {
       if (id) {
         const ok = await verifyById(id)
         if (!ok) setState('fail')
@@ -49,6 +47,7 @@ function ThanksInner() {
     <main className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900">
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         {state === 'loading' && <h1 className="text-2xl font-extrabold">Confirmando tu pago…</h1>}
+
         {state === 'ok' && (
           <div>
             <h1 className="text-3xl font-extrabold">¡Acceso activado! 🎉</h1>
@@ -61,20 +60,16 @@ function ThanksInner() {
             </Link>
           </div>
         )}
+
         {state === 'fail' && (
           <div>
             <h1 className="text-3xl font-extrabold">No pudimos confirmar el pago</h1>
             <p className="mt-3 text-slate-600">
-              Si tu pago fue aprobado, vuelve a abrir este enlace desde el mismo navegador o escríbenos para activarte
-              manualmente.
+              Si tu pago fue aprobado, vuelve a abrir este enlace desde el mismo navegador o escríbenos para activarte manualmente.
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
-              <Link href="/admin" className="rounded border px-4 py-2 text-sm">
-                Contactar soporte
-              </Link>
-              <Link href="/" className="rounded border px-4 py-2 text-sm">
-                Volver
-              </Link>
+              <Link href="/admin" className="rounded border px-4 py-2 text-sm">Contactar soporte</Link>
+              <Link href="/" className="rounded border px-4 py-2 text-sm">Volver</Link>
             </div>
           </div>
         )}
@@ -85,8 +80,8 @@ function ThanksInner() {
 
 export default function ThanksPage() {
   return (
-    <Suspense fallback={<main className="container py-10">Cargando…</main>}>
-      <ThanksInner />
+    <Suspense fallback={<main className="min-h-screen grid place-items-center">Cargando…</main>}>
+      <ThanksContent />
     </Suspense>
   )
 }
