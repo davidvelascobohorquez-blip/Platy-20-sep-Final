@@ -132,7 +132,12 @@ export default function DemoPage() {
     if (!plan) return
     setPdfGenerating(true)
     try {
-      const blob = await makePlanPdf(plan, 'es')
+      // ⬇️ FIX: makePlanPdf ahora recibe un objeto de opciones
+      const blob = await makePlanPdf(plan, {
+        lang: 'es',
+        brand: site.brand ?? 'Platy',
+        city: plan.meta.ciudad,
+      })
       const url = URL.createObjectURL(blob)
       setPdfUrl(url)
     } catch (e) {
@@ -611,4 +616,3 @@ export default function DemoPage() {
     </main>
   )
 }
-
