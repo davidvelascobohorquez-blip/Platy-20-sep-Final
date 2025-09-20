@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   // Mensaje al modelo: devolver JSON *estricto* que cumpla el PlanSchema
-  const schemaShape = PlanSchema.describe() // not used directly, only for context
+  // (nota: la línea con PlanSchema.describe() se removió porque no era usada)
   const userPrompt = [
     `Genera un plan semanal (7 días) en ESPAÑOL para ${personas} persona(s) en ${ciudad}.`,
     `Modo: ${modo}. Respeta dietas/equipos/alergias si vienen en el payload.`,
@@ -263,3 +263,4 @@ export async function POST(req: NextRequest) {
   }
   return res
 }
+
