@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
       Abarrotes: ['aceite', 'ajo']
     }
 
-    // 1) Aseguramos que TODO lo que usamos es ItemQty bien formado
+    // 1) Forzamos ItemQty en todos los ingredientes
     const flat: ItemQty[] = plan.menu.flatMap((m) =>
       Array.isArray(m.ingredientes)
         ? m.ingredientes.map((it) =>
@@ -284,4 +284,3 @@ export async function POST(req: NextRequest) {
   }
   return res
 }
-
