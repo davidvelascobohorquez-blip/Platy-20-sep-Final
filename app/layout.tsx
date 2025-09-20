@@ -4,13 +4,20 @@ import { Inter } from 'next/font/google'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
+// Asegura URLs absolutas para OG/Twitter usando metadataBase
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') || 'https://platy.app'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'PLATY — Tu menú semanal más barato, en 1 clic',
-  description: 'Ingredientes locales, cantidades con unidades y costo estimado para tu ciudad. PDF + WhatsApp.',
+  description:
+    'Ingredientes locales, cantidades con unidades y costo estimado para tu ciudad. PDF + WhatsApp.',
   openGraph: {
     title: 'PLATY — Menú semanal económico',
-    description: 'Ingredientes locales + lista de compras consolidada. Cocina en 30–45 min.',
-    url: 'https://platy.app',
+    description:
+      'Ingredientes locales + lista de compras consolidada. Cocina en 30–45 min.',
+    url: '/',
     siteName: 'PLATY',
     images: [{ url: '/og.jpg', width: 1200, height: 630 }],
     locale: 'es_ES',
@@ -22,9 +29,16 @@ export const metadata: Metadata = {
     description: 'Ingredientes locales + lista de compras consolidada.',
     images: ['/og.jpg'],
   },
+  alternates: {
+    canonical: '/',
+  },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="es">
       <body className={`${inter.variable} font-sans antialiased text-charcoal bg-sand`}>
