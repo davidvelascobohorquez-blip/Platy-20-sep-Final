@@ -5,9 +5,10 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-// fuerza render dinámico y evita ISR en esta ruta
+// Fuerza dinámico y desactiva ISR en esta ruta
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 0 // <-- número, no objeto
+export const fetchCache = 'force-no-store'
 
 function ThanksContent() {
   const sp = useSearchParams()
