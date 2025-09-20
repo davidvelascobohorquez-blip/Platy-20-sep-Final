@@ -57,12 +57,11 @@ function roundFriendly(q: number, u: Unit) {
 }
 
 function normalizeUnit(name: string, qty: number, unit: string): ItemQty {
-  // Intenta mapear alias comunes hacia g/ml/ud
   const u = unit.toLowerCase()
-  // ejemplos simples de conversión
-  const spoonG = 5 // g por cucharadita aproximada
-  const cupG = 230 // g para sólidos promedio
-  const cupMl = 240 // ml para líquidos
+  const spoonG = 5   // g por cucharadita aproximada
+  const cupG = 230   // g para sólidos promedio
+  const cupMl = 240  // ml para líquidos
+
   if (['unidad','unidades','u','ud','huevo','pan'].includes(u) || u === 'ud') {
     return { name, qty: roundFriendly(qty, 'ud'), unit: 'ud' }
   }
@@ -76,12 +75,11 @@ function normalizeUnit(name: string, qty: number, unit: string): ItemQty {
     return { name, qty: roundFriendly(qty*spoonG, 'g'), unit: 'g' }
   }
   if (['taza','tazas','cup','cups'].includes(u)) {
-    // heurística: si suena a líquido, ml; de lo contrario g
     const liquid = /leche|agua|caldo|aceite/.test(name.toLowerCase())
-    return liquid ? { name, qty: roundFriendly(qty*cupMl, 'ml'), unit: 'ml' }
-                  : { name, qty: roundFriendly(qty*cupG, 'g'), unit: 'g' }
+    return liquid
+      ? { name, qty: roundFriendly(qty*cupMl, 'ml'), unit: 'ml' }
+      : { name, qty: roundFriendly(qty*cupG, 'g'), unit: 'g' }
   }
-  // por defecto g
   return { name, qty: roundFriendly(qty, 'g'), unit: 'g' }
 }
 
@@ -194,8 +192,7 @@ export async function POST(req: NextRequest) {
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-  // Mensaje al modelo: devolver JSON *estricto* que cumpla el PlanSchema
-  // (nota: la línea con PlanSchema.describe() se removió porque no era usada)
+  // Mensaje al modelo: devolver JSON *estricto*
   const userPrompt = [
     `Genera un plan semanal (7 días) en ESPAÑOL para ${personas} persona(s) en ${ciudad}.`,
     `Modo: ${modo}. Respeta dietas/equipos/alergias si vienen en el payload.`,
@@ -222,7 +219,9 @@ export async function POST(req: NextRequest) {
     if (ai?.menu) {
       for (const d of ai.menu) {
         if (Array.isArray(d.ingredientes)) {
-          d.ingredientes = d.ingredientes.map((it: any) => normalizeUnit(String(it.name), Number(it.qty || 0), String(it.unit || 'g')))
+          d.ingredientes = d.ingredientes.map((it: any) =>
+            normalizeUnit(String(it.name), Number(it.qty || 0), String(it.unit || 'g'))
+          )
         }
       }
     }
@@ -244,7 +243,14 @@ export async function POST(req: NextRequest) {
       Granos: ['arroz', 'pasta', 'tortilla', 'arepa'],
       Abarrotes: ['aceite', 'ajo']
     }
-    const all = consolidate(plan.menu.flatMap(m => m.ingredientes)).map(it => ({ ...it, qty: roundFriendly(it.qty, it.unit) }))
+
+    const all: ItemQty[] = consolidate(
+      plan.menu.flatMap((m) => m.ingredientes as ItemQty[])
+    ).map((it: ItemQty) => ({
+      ...it,
+      qty: roundFriendly(it.qty, it.unit as Unit),
+    }))
+
     const lista: Record<string, ItemQty[]> = {}
     for (const it of all) {
       const cat = Object.keys(cats).find(k => cats[k].includes(it.name)) || 'Otros'
@@ -257,9 +263,18 @@ export async function POST(req: NextRequest) {
     plan.meta = { ciudad, personas, modo, moneda: 'COP' }
   }
 
-  const res = NextResponse.json(plan, { headers: { 'x-platy-has-access': String(hasAccess), 'x-platy-trials': String(trials) } })
+  const res = NextResponse.json(plan, {
+    headers: {
+      'x-platy-has-access': String(hasAccess),
+      'x-platy-trials': String(trials)
+    }
+  })
   if (!hasAccess) {
-    res.cookies.set('platy_trials', String(trials + 1), { httpOnly: true, sameSite: 'lax', maxAge: 60*60*24*365 })
+    res.cookies.set('platy_trials', String(trials + 1), {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60*60*24*365
+    })
   }
   return res
 }
