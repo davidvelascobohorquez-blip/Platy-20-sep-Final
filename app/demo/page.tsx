@@ -28,6 +28,9 @@ type Plan = {
   tiendas: { sugerida: StoreOpt; opciones: StoreOpt[]; mapsUrl: string }
 }
 
+/* El generador de PDF puede devolver un Blob o un objeto con { blob, url, filename } */
+type PdfResult = Blob | { blob: Blob; url?: string; filename?: string }
+
 /* =========================
    Utils
 ========================= */
@@ -47,7 +50,7 @@ export default function DemoPage() {
   // Estado del formulario
   const [ciudad, setCiudad] = useState('Bogotá, CO')
   const [personas, setPersonas] = useState<number | null>(2)
-  const [comidas, setComidas] = useState<string[]>(['Almuerzos']) // puede varias
+  const [comidas, setComidas] = useState<string[]>(['Almuerzos'])
   const [modo, setModo] = useState<'30 min' | '45 min' | 'Sin preferencia' | null>('30 min')
   const [equipo, setEquipo] = useState<'Todo ok' | 'Sin horno' | 'Sin licuadora' | 'Sin airfryer' | null>('Todo ok')
   const [dieta, setDieta] = useState<'Ninguna' | 'Vegetariana' | 'Vegana' | 'Baja en carbohidratos' | 'Alta en proteína'>('Ninguna')
@@ -73,8 +76,8 @@ export default function DemoPage() {
     if (step === 3) return comidas.length > 0
     if (step === 4) return !!modo
     if (step === 5) return !!equipo
-    if (step === 6) return true // dieta/alergias siempre válidas
-    if (step === 7) return true // prefs/presupuesto
+    if (step === 6) return true
+    if (step === 7) return true
     return false
   }, [step, ciudad, personas, comidas, modo, equipo])
 
@@ -132,13 +135,16 @@ export default function DemoPage() {
     if (!plan) return
     setPdfGenerating(true)
     try {
-      // makePlanPdf devuelve un Blob en esta implementación
-      const blob = await makePlanPdf(plan, {
+      // makePlanPdf puede devolver Blob o { blob, url, filename }
+      const pdfRes: PdfResult = await makePlanPdf(plan, {
         lang: 'es',
         brand: site.brand ?? 'Platy',
         city: plan.meta.ciudad,
       })
-      const url = URL.createObjectURL(blob)
+
+      const blob = pdfRes instanceof Blob ? pdfRes : pdfRes.blob
+      const url = (pdfRes as any).url ?? URL.createObjectURL(blob)
+
       setPdfUrl(url)
     } catch {
       alert('No pudimos generar el PDF. Intenta de nuevo.')
@@ -154,7 +160,7 @@ export default function DemoPage() {
     }
   }, [pdfUrl])
 
-  // Helpers UI toggles  (FIX: encerrar en paréntesis y terminar con ;) 
+  // Helpers UI toggles (paréntesis + ;)
   const toggleFromArray = (arr: string[], val: string) => (
     arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]
   );
