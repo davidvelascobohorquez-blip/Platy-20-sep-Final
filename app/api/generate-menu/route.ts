@@ -51,18 +51,17 @@ type Plan = z.infer<typeof PlanSchema>
 // ===================== HELPERS =====================
 function roundFriendly(q: number, u: Unit) {
   if (u === 'ud') return Math.round(q)
-  // g/ml
-  if (q < 100) return Math.round(q/25)*25
+  if (q < 100) return Math.round(q/25)*25 // g/ml
   return Math.round(q/50)*50
 }
 
 function normalizeUnit(name: string, qty: number, unit: string): ItemQty {
-  const u = unit.toLowerCase()
-  const spoonG = 5   // g por cucharadita aproximada
-  const cupG = 230   // g para sólidos promedio
-  const cupMl = 240  // ml para líquidos
+  const u = (unit || '').toLowerCase()
+  const spoonG = 5
+  const cupG = 230
+  const cupMl = 240
 
-  if (['unidad','unidades','u','ud','huevo','pan'].includes(u) || u === 'ud') {
+  if (['unidad','unidades','u','ud'].includes(u) || ['huevo','pan'].includes(name.toLowerCase())) {
     return { name, qty: roundFriendly(qty, 'ud'), unit: 'ud' }
   }
   if (['gr','gramo','gramos','g'].includes(u)) {
@@ -80,6 +79,7 @@ function normalizeUnit(name: string, qty: number, unit: string): ItemQty {
       ? { name, qty: roundFriendly(qty*cupMl, 'ml'), unit: 'ml' }
       : { name, qty: roundFriendly(qty*cupG, 'g'), unit: 'g' }
   }
+  // por defecto g
   return { name, qty: roundFriendly(qty, 'g'), unit: 'g' }
 }
 
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-  // Mensaje al modelo: devolver JSON *estricto*
+  // Prompt (se removió el PlanSchema.describe() que causaba el error de tipos)
   const userPrompt = [
     `Genera un plan semanal (7 días) en ESPAÑOL para ${personas} persona(s) en ${ciudad}.`,
     `Modo: ${modo}. Respeta dietas/equipos/alergias si vienen en el payload.`,
@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
       for (const d of ai.menu) {
         if (Array.isArray(d.ingredientes)) {
           d.ingredientes = d.ingredientes.map((it: any) =>
-            normalizeUnit(String(it.name), Number(it.qty || 0), String(it.unit || 'g'))
+            normalizeUnit(String(it.name ?? ''), Number(it.qty ?? 0), String(it.unit ?? 'g'))
           )
         }
       }
@@ -236,7 +236,7 @@ export async function POST(req: NextRequest) {
   if (!plan) {
     plan = fallbackPlan(ciudad, personas, modo)
   } else {
-    // Recalcular lista consolidada y costos por si el modelo no llenó todo
+    // Recalcular lista consolidada y costos con tipado estricto
     const cats: Record<string, string[]> = {
       Verduras: ['tomate', 'cebolla', 'pimentón', 'zanahoria', 'brocoli', 'papa'],
       Proteína: ['pollo pechuga', 'huevo', 'queso'],
@@ -244,19 +244,28 @@ export async function POST(req: NextRequest) {
       Abarrotes: ['aceite', 'ajo']
     }
 
-    const all: ItemQty[] = consolidate(
-      plan.menu.flatMap((m) => m.ingredientes as ItemQty[])
-    ).map((it: ItemQty) => ({
-      ...it,
-      qty: roundFriendly(it.qty, it.unit as Unit),
-    }))
+    // 1) Aseguramos que TODO lo que usamos es ItemQty bien formado
+    const flat: ItemQty[] = plan.menu.flatMap((m) =>
+      Array.isArray(m.ingredientes)
+        ? m.ingredientes.map((it) =>
+            normalizeUnit(String(it.name ?? ''), Number(it.qty ?? 0), String((it as any).unit ?? 'g'))
+          )
+        : []
+    )
 
+    // 2) Redondeamos y consolidamos con tipos fuertes
+    const all: ItemQty[] = consolidate(
+      flat.map((it) => ({ ...it, qty: roundFriendly(it.qty, it.unit) }))
+    )
+
+    // 3) Armamos lista por categoría
     const lista: Record<string, ItemQty[]> = {}
     for (const it of all) {
-      const cat = Object.keys(cats).find(k => cats[k].includes(it.name)) || 'Otros'
+      const cat = Object.keys(cats).find((k) => cats[k].includes(it.name)) || 'Otros'
       if (!lista[cat]) lista[cat] = []
       lista[cat].push({ ...it, estCOP: estimateItemCOP(it, ciudad) })
     }
+
     const costos = buildCosts(lista, ciudad)
     plan.lista = lista
     plan.costos = { porCategoria: costos.porCategoria, total: costos.total, nota: 'Precios estimados según ciudad' }
@@ -264,10 +273,7 @@ export async function POST(req: NextRequest) {
   }
 
   const res = NextResponse.json(plan, {
-    headers: {
-      'x-platy-has-access': String(hasAccess),
-      'x-platy-trials': String(trials)
-    }
+    headers: { 'x-platy-has-access': String(hasAccess), 'x-platy-trials': String(trials) }
   })
   if (!hasAccess) {
     res.cookies.set('platy_trials', String(trials + 1), {
