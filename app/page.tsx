@@ -1,11 +1,30 @@
-// app/page.tsx
-import Link from 'next/link'
-import Brand from '@/components/Brand'
+'use client'
 
-export default function HomePage() {
+import Header from '@/components/Header'
+import FloatingCTA from '@/components/FloatingCTA'
+
+// Importar el ícono de verificación de Heroicons
+import { CheckIcon } from '@heroicons/react/20/solid'
+
+// ✅ Página 100% Server Component (sin estado) para compilar limpio en Vercel
+export default function Page() {
+  const WHATSAPP = "https://wa.me/573001234567?text=Hola%20Platy%20%F0%9F%8D%B3%20quiero%20saber%20m%C3%A1s";
+  const GPT_LINK = "https://chatgpt.com/g/g-68c9a24d35d88191b6d6750c86a6241f-platy";
+  const PRICE_COP = "$37.700 COP";
+  const PRICE_USD = "USD $9.97";
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900">
-      {/* Hero */}
+      <Header />
+      {/* Barra pegajosa de oferta */}
+      <div className="sticky top-0 z-50 w-full bg-amber-50 border-b border-amber-200/70">
+        <div className="mx-auto max-w-6xl px-4 py-2 text-center text-sm md:text-[15px]">
+          <strong className="font-semibold">OFERTA RELÁMPAGO</strong>: Acceso de por vida por {PRICE_USD} / {PRICE_COP}
+          <span className="ml-2 inline-block rounded-full bg-amber-200 px-2 py-0.5 text-xs">Cupos limitados</span>
+        </div>
+      </div>
+
+      {/* HERO */}
       <section className="relative mx-auto max-w-6xl px-4 pt-10 pb-12 md:pt-16 md:pb-16">
         <div className="grid items-center gap-8 md:grid-cols-2">
           <div>
@@ -18,13 +37,22 @@ export default function HomePage() {
               disfrutas.
             </p>
             <ul className="mt-4 space-y-2 text-slate-700">
-              <li className="flex items-start gap-2"><CheckIcon/><span>Ahorra <b>10+ horas</b> a la semana en planificación.</span></li>
-              <li className="flex items-start gap-2"><CheckIcon/><span>Optimiza tu <b>presupuesto</b> con precios estimados por ciudad.</span></li>
-              <li className="flex items-start gap-2"><CheckIcon/><span>Menús para familias, solteros ocupados y quien quiere <b>orden</b>.</span></li>
+              <li className="flex items-start gap-2">
+                <CheckIcon className="h-5 w-5 text-emerald-600" />
+                <span>Ahorra <b>10+ horas</b> a la semana en planificación.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckIcon className="h-5 w-5 text-emerald-600" />
+                <span>Optimiza tu <b>presupuesto</b> con precios estimados por ciudad.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckIcon className="h-5 w-5 text-emerald-600" />
+                <span>Menús para familias, solteros ocupados y quien quiere <b>orden</b>.</span>
+              </li>
             </ul>
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <a
-                href="https://chatgpt.com/g/g-68c9a24d35d88191b6d6750c86a6241f-platy"
+                href={GPT_LINK}
                 className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-white font-semibold shadow hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
               >
                 Probar gratis <span className="ml-2 text-xs opacity-80">(demo en ChatGPT)</span>
@@ -36,7 +64,7 @@ export default function HomePage() {
                 Comprar acceso de por vida
               </a>
               <a
-                href="https://wa.me/573001234567?text=Hola%20Platy%20%F0%9F%8D%B3%20quiero%20saber%20m%C3%A1s"
+                href={WHATSAPP}
                 target="_blank" rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-5 py-3 font-semibold text-emerald-800 shadow hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-300"
               >
@@ -105,9 +133,9 @@ export default function HomePage() {
               <h2 className="text-2xl md:text-3xl font-bold">Acceso de por vida</h2>
               <p className="mt-3 text-slate-600">Paga una sola vez y usa Platy para siempre. Incluye 2 eBooks de regalo y nuestro GPT personalizado.</p>
               <ul className="mt-4 space-y-2 text-slate-700">
-                <li className="flex items-start gap-2"><CheckIcon/><span>Menús <b>ilimitados</b> y lista de compras inteligente.</span></li>
-                <li className="flex items-start gap-2"><CheckIcon/><span>Costos estimados por ciudad y <b>batch cooking</b>.</span></li>
-                <li className="flex items-start gap-2"><CheckIcon/><span>Pago único • <b>Garantía 7 días</b> • Sin mensualidades.</span></li>
+                <li className="flex items-start gap-2"><CheckIcon className="h-5 w-5 text-emerald-600" /><span>Menús <b>ilimitados</b> y lista de compras inteligente.</span></li>
+                <li className="flex items-start gap-2"><CheckIcon className="h-5 w-5 text-emerald-600" /><span>Costos estimados por ciudad y <b>batch cooking</b>.</span></li>
+                <li className="flex items-start gap-2"><CheckIcon className="h-5 w-5 text-emerald-600" /><span>Pago único • <b>Garantía 7 días</b> • Sin mensualidades.</span></li>
               </ul>
             </div>
             <div className="md:pl-6">
@@ -121,7 +149,7 @@ export default function HomePage() {
                 <a href="/demo" className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-white font-semibold shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                   ¡Quiero mi acceso vitalicio!
                 </a>
-                <a href="https://chatgpt.com/g/g-68c9a24d35d88191b6d6750c86a6241f-platy" className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold shadow hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                <a href={GPT_LINK} className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold shadow hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
                   Probar gratis (demo en ChatGPT)
                 </a>
                 <p className="mt-3 text-xs text-slate-500">Nequi · PSE · Tarjeta • Pago seguro</p>
@@ -183,7 +211,7 @@ export default function HomePage() {
             <div className="mt-3 md:mt-0 flex items-center gap-4">
               <a href="#" className="hover:underline">Términos</a>
               <a href="#" className="hover:underline">Privacidad</a>
-              <a href="https://wa.me/573001234567?text=Hola%20Platy%20%F0%9F%8D%B3%20quiero%20saber%20m%C3%A1s" target="_blank" rel="noreferrer" className="hover:underline">Soporte</a>
+              <a href={WHATSAPP} target="_blank" rel="noreferrer" className="hover:underline">Soporte</a>
             </div>
           </div>
           <p className="mt-4 text-xs text-slate-500">* Precios estimados según ciudad. Los valores pueden variar por temporada y supermercado.</p>
@@ -192,3 +220,4 @@ export default function HomePage() {
     </main>
   );
 }
+
