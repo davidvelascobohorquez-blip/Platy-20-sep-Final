@@ -1,45 +1,11 @@
+// app/page.tsx
+import Link from 'next/link'
+import Brand from '@/components/Brand'
 
-export const metadata = {
-  title: "Platy · Menús semanales inteligentes – Acceso de por vida",
-  description:
-    "Ahorra tiempo y dinero con menús semanales personalizados, lista de compras inteligente y costos estimados por ciudad. Acceso de por vida por solo USD $9.97 / $37.700 COP.",
-  openGraph: {
-    title: "Platy · Menús semanales inteligentes",
-    description:
-      "Menús personalizados + lista de compras + costos por ciudad. Acceso vitalicio.",
-    type: "website",
-    url: "https://platy.app",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Platy · Menús semanales inteligentes",
-    description:
-      "Ahorra 10+ horas a la semana dejando que Platy planifique por ti.",
-  },
-};
-
-import Header from '@/components/Header'
-import FloatingCTA from '@/components/FloatingCTA'
-
-// ✅ Página 100% Server Component (sin estado) para compilar limpio en Vercel
-export default function Page() {
-  const WHATSAPP = "https://wa.me/573001234567?text=Hola%20Platy%20%F0%9F%8D%B3%20quiero%20saber%20m%C3%A1s";
-  const GPT_LINK = "https://chatgpt.com/g/g-68c9a24d35d88191b6d6750c86a6241f-platy";
-  const PRICE_COP = "$37.700 COP";
-  const PRICE_USD = "USD $9.97";
-
+export default function HomePage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900">
-      <Header />
-      {/* Barra pegajosa de oferta */}
-      <div className="sticky top-0 z-50 w-full bg-amber-50 border-b border-amber-200/70">
-        <div className="mx-auto max-w-6xl px-4 py-2 text-center text-sm md:text-[15px]">
-          <strong className="font-semibold">OFERTA RELÁMPAGO</strong>: Acceso de por vida por {PRICE_USD} / {PRICE_COP}
-          <span className="ml-2 inline-block rounded-full bg-amber-200 px-2 py-0.5 text-xs">Cupos limitados</span>
-        </div>
-      </div>
-
-      {/* HERO */}
+      {/* Hero */}
       <section className="relative mx-auto max-w-6xl px-4 pt-10 pb-12 md:pt-16 md:pb-16">
         <div className="grid items-center gap-8 md:grid-cols-2">
           <div>
@@ -58,7 +24,7 @@ export default function Page() {
             </ul>
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <a
-                href={GPT_LINK}
+                href="https://chatgpt.com/g/g-68c9a24d35d88191b6d6750c86a6241f-platy"
                 className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-white font-semibold shadow hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
               >
                 Probar gratis <span className="ml-2 text-xs opacity-80">(demo en ChatGPT)</span>
@@ -70,7 +36,7 @@ export default function Page() {
                 Comprar acceso de por vida
               </a>
               <a
-                href={WHATSAPP}
+                href="https://wa.me/573001234567?text=Hola%20Platy%20%F0%9F%8D%B3%20quiero%20saber%20m%C3%A1s"
                 target="_blank" rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-5 py-3 font-semibold text-emerald-800 shadow hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-300"
               >
@@ -155,7 +121,7 @@ export default function Page() {
                 <a href="/demo" className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-white font-semibold shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                   ¡Quiero mi acceso vitalicio!
                 </a>
-                <a href={GPT_LINK} className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold shadow hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                <a href="https://chatgpt.com/g/g-68c9a24d35d88191b6d6750c86a6241f-platy" className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold shadow hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
                   Probar gratis (demo en ChatGPT)
                 </a>
                 <p className="mt-3 text-xs text-slate-500">Nequi · PSE · Tarjeta • Pago seguro</p>
@@ -217,95 +183,12 @@ export default function Page() {
             <div className="mt-3 md:mt-0 flex items-center gap-4">
               <a href="#" className="hover:underline">Términos</a>
               <a href="#" className="hover:underline">Privacidad</a>
-              <a href={WHATSAPP} target="_blank" rel="noreferrer" className="hover:underline">Soporte</a>
+              <a href="https://wa.me/573001234567?text=Hola%20Platy%20%F0%9F%8D%B3%20quiero%20saber%20m%C3%A1s" target="_blank" rel="noreferrer" className="hover:underline">Soporte</a>
             </div>
           </div>
           <p className="mt-4 text-xs text-slate-500">* Precios estimados según ciudad. Los valores pueden variar por temporada y supermercado.</p>
         </div>
       </footer>
     </main>
-  );
-}
-
-/* ===================== Componentes locales (sin dependencias) ===================== */
-function Card({
-  title,
-  desc,
-  icon,
-}: {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
-          {icon}
-        </div>
-        <h3 className="text-lg font-semibold">{title}</h3>
-      </div>
-      <p className="mt-2 text-slate-600">{desc}</p>
-    </div>
-  );
-}
-
-function Step({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="mt-1 text-slate-600">{text}</p>
-    </div>
-  );
-}
-
-function Testimonial({ name, text }: { name: string; text: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-slate-700">“{text}”</p>
-      <p className="mt-2 text-sm text-slate-500">— {name}</p>
-    </div>
-  );
-}
-
-function Faq({ q, a }: { q: string; a: string }) {
-  return (
-    <details className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm open:shadow-md">
-      <summary className="flex cursor-pointer list-none items-center justify-between">
-        <span className="text-base font-semibold text-slate-900">{q}</span>
-        <span className="ml-4 flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 text-slate-600 transition group-open:rotate-45">+</span>
-      </summary>
-      <p className="mt-3 text-slate-600">{a}</p>
-    </details>
-  );
-}
-
-/* ===================== Iconos (SVG inline) ===================== */
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="mt-1 h-5 w-5 text-emerald-600">
-      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.5 7.5a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L8.5 12.086l6.793-6.793a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-}
-function HeartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
-      <path d="M12 21s-7-4.35-9.33-8.12A5.5 5.5 0 0112 5.09a5.5 5.5 0 019.33 7.79C19 16.65 12 21 12 21z" />
-    </svg>
-  );
-}
-function BoltIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
-      <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
-    </svg>
-  );
-}
-function WalletIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
-      <path d="M2 7a3 3 0 013-3h12a3 3 0 013 3v2h-5a3 3 0 000 6h5v2a3 3 0 01-3 3H5a3 3 0 01-3-3V7zm17 5a1 1 0 100 2h3v-2h-3z" />
-    </svg>
   );
 }
