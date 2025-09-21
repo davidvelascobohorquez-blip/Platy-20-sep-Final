@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Brand from '@/components/Brand'
 import Button from '@/components/Button'
 import StepperDots from '@/components/StepperDots'
-import PlanPDF, { makePlanPdf } from '@/components/PlanPDF'
 import { site } from '@/site.config'
 
 /* =========================
@@ -28,14 +27,11 @@ type Plan = {
   tiendas: { sugerida: StoreOpt; opciones: StoreOpt[]; mapsUrl: string }
 }
 
-/* El generador de PDF puede devolver un Blob o un objeto con { blob, url, filename } */
-type PdfResult = Blob | { blob: Blob; url?: string; filename?: string }
-
 /* =========================
    Utils
 ========================= */
 function fmtCOP(n?: number) {
-  if (typeof n !== 'number') return '-'
+  if (typeof n !== 'number' || Number.isNaN(n)) return '-'
   return n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 }
 
@@ -50,13 +46,15 @@ export default function DemoPage() {
   // Estado del formulario
   const [ciudad, setCiudad] = useState('Bogotá, CO')
   const [personas, setPersonas] = useState<number | null>(2)
-  const [comidas, setComidas] = useState<string[]>(['Almuerzos'])
+  const [comidas, setComidas] = useState<string[]>(['Almuerzos']) // puede varias
   const [modo, setModo] = useState<'30 min' | '45 min' | 'Sin preferencia' | null>('30 min')
   const [equipo, setEquipo] = useState<'Todo ok' | 'Sin horno' | 'Sin licuadora' | 'Sin airfryer' | null>('Todo ok')
   const [dieta, setDieta] = useState<'Ninguna' | 'Vegetariana' | 'Vegana' | 'Baja en carbohidratos' | 'Alta en proteína'>('Ninguna')
   const [alergias, setAlergias] = useState<string[]>([])
   const [objetivo, setObjetivo] = useState<'Ahorrar' | 'Variedad' | 'Rápido' | 'Balanceado'>('Ahorrar')
-  const [presupuesto, setPresupuesto] = useState<string>('') // opcional (COP aprox)
+  // Nuevo par: raw (lo que ve el usuario) y limpio (string dígitos para envío)
+  const [presupuestoRaw, setPresupuestoRaw] = useState<string>('') // muestra con separadores
+  const [presupuesto, setPresupuesto] = useState<string>('')        // sólo dígitos
   const [prefs, setPrefs] = useState<string[]>(['Económico'])
 
   // Resultado
@@ -76,8 +74,8 @@ export default function DemoPage() {
     if (step === 3) return comidas.length > 0
     if (step === 4) return !!modo
     if (step === 5) return !!equipo
-    if (step === 6) return true
-    if (step === 7) return true
+    if (step === 6) return true // dieta/alergias siempre válidas
+    if (step === 7) return true // prefs/presupuesto
     return false
   }, [step, ciudad, personas, comidas, modo, equipo])
 
@@ -135,18 +133,23 @@ export default function DemoPage() {
     if (!plan) return
     setPdfGenerating(true)
     try {
-      // makePlanPdf puede devolver Blob o { blob, url, filename }
-      const pdfRes: PdfResult = await makePlanPdf(plan, {
+      // Importa sólo cuando hace falta (evita side-effects al cargar la página)
+      const { makePlanPdf } = await import('@/components/PlanPDF')
+
+      const blob = await makePlanPdf(plan, {
         lang: 'es',
         brand: site.brand ?? 'Platy',
         city: plan.meta.ciudad,
       })
 
-      const blob = pdfRes instanceof Blob ? pdfRes : pdfRes.blob
-      const url = (pdfRes as any).url ?? URL.createObjectURL(blob)
+      if (!(blob instanceof Blob)) {
+        throw new Error('La función makePlanPdf no devolvió un Blob válido.')
+      }
 
+      const url = URL.createObjectURL(blob)
       setPdfUrl(url)
-    } catch {
+    } catch (e) {
+      console.error(e)
       alert('No pudimos generar el PDF. Intenta de nuevo.')
     } finally {
       setPdfGenerating(false)
@@ -160,10 +163,9 @@ export default function DemoPage() {
     }
   }, [pdfUrl])
 
-  // Helpers UI toggles (paréntesis + ;)
-  const toggleFromArray = (arr: string[], val: string) => (
+  // Helpers UI toggles
+  const toggleFromArray = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]
-  );
 
   return (
     <main className="container py-6 md:py-10">
@@ -172,6 +174,9 @@ export default function DemoPage() {
         <Brand />
         <div className="hidden sm:block min-w-[220px]">
           <StepperDots step={Math.min(step, totalSteps)} total={totalSteps} />
+          <div className="mt-1 text-xs text-stone">
+            {['Ciudad', 'Personas', 'Tipo', 'Tiempo', 'Equipo', 'Dieta', 'Preferencias'][Math.min(step, totalSteps)-1]}
+          </div>
         </div>
       </div>
 
@@ -433,15 +438,26 @@ export default function DemoPage() {
                 <div className="mt-3 grid sm:grid-cols-[220px,1fr] gap-3 items-center">
                   <label className="text-sm text-stone">Presupuesto semanal (COP, opcional)</label>
                   <input
-                    value={presupuesto}
-                    onChange={(e) => setPresupuesto(e.target.value)}
+                    value={presupuestoRaw}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^\d]/g, '')
+                      setPresupuesto(digits)
+                      setPresupuestoRaw(digits)
+                    }}
+                    onBlur={() => {
+                      if (presupuestoRaw) {
+                        const digits = presupuestoRaw.replace(/[^\d]/g, '')
+                        if (digits) setPresupuestoRaw(Number(digits).toLocaleString('es-CO'))
+                      }
+                    }}
                     placeholder="Ej: 120000"
+                    inputMode="numeric"
                     className="rounded-2xl border border-line px-4 py-3"
                   />
                 </div>
 
                 <div className="mt-6 flex gap-3">
-                  <Button onClick={generarPlan} disabled={generating}>
+                  <Button onClick={generarPlan} disabled={generating} aria-busy={generating}>
                     {generating ? 'Cocinando tu menú…' : 'Confirmar y generar plan'}
                   </Button>
                 </div>
@@ -464,7 +480,7 @@ export default function DemoPage() {
               <li><span className="text-stone">Dieta:</span> {dieta}</li>
               <li><span className="text-stone">Alergias:</span> {alergias.join(', ') || 'Ninguna'}</li>
               <li><span className="text-stone">Objetivo:</span> {objetivo}</li>
-              <li><span className="text-stone">Presupuesto:</span> {presupuesto ? fmtCOP(Number(presupuesto.replace(/[^\d]/g, ''))) : '—'}</li>
+              <li><span className="text-stone">Presupuesto:</span> {presupuesto ? fmtCOP(Number(presupuesto)) : '—'}</li>
               <li><span className="text-stone">Prefs:</span> {prefs.join(', ') || '—'}</li>
             </ul>
             <p className="text-xs text-stone mt-3">
@@ -618,6 +634,11 @@ export default function DemoPage() {
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-6px); }
+        }
+        .pulse { animation: pulse 0.6s ease; }
+        @keyframes pulse {
+          0% { background-color: rgba(255,199,0,0.15); }
+          100% { background-color: transparent; }
         }
       `}</style>
     </main>
