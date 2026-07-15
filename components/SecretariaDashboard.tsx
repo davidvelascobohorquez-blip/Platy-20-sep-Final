@@ -1,24 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { haversineKm } from "@/lib/geo";
-import { EstimateDTO, STATUS_LABEL, VendorDTO } from "@/lib/types";
+import { EstimateDTO, STATUS_LABEL } from "@/lib/types";
+
+type NearbyVendor = {
+  id: string;
+  name: string;
+  queue: number;
+  travelMinutes: number | null;
+  distanceKm: number | null;
+  estimated: boolean;
+};
 
 export default function SecretariaDashboard() {
   const [clientName, setClientName] = useState("");
   const [address, setAddress] = useState("");
   const [timeWindow, setTimeWindow] = useState("Todo el día");
   const [customWindow, setCustomWindow] = useState("");
-  const [vendors, setVendors] = useState<VendorDTO[]>([]);
   const [estimates, setEstimates] = useState<EstimateDTO[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    const [vRes, eRes] = await Promise.all([fetch("/api/vendors"), fetch("/api/estimates")]);
-    const vData = await vRes.json();
+    const eRes = await fetch("/api/estimates");
     const eData = await eRes.json();
-    setVendors(vData.vendors || []);
     setEstimates(eData.estimates || []);
   }
 
@@ -56,24 +61,6 @@ export default function SecretariaDashboard() {
       body: JSON.stringify({ vendorId })
     });
     load();
-  }
-
-  function sortedVendorsFor(estimate: EstimateDTO) {
-    return [...vendors]
-      .filter((v) => v.active)
-      .map((v) => ({
-        ...v,
-        distanceKm:
-          v.lat != null && v.lng != null && estimate.lat != null && estimate.lng != null
-            ? haversineKm(v.lat, v.lng, estimate.lat, estimate.lng)
-            : null,
-        queue: v.estimates.length
-      }))
-      .sort((a, b) => {
-        if (a.distanceKm == null) return 1;
-        if (b.distanceKm == null) return -1;
-        return a.distanceKm - b.distanceKm;
-      });
   }
 
   const pending = estimates.filter((e) => e.status === "PENDING");
@@ -145,22 +132,7 @@ export default function SecretariaDashboard() {
               <p className="font-medium">{estimate.clientName}</p>
               <p className="text-sm text-neutral-600">{estimate.address}</p>
               <p className="text-sm text-neutral-600">Franja: {estimate.timeWindow}</p>
-              <div className="mt-2">
-                <label className="block text-sm font-medium mb-1">Asignar a vendedor (más cercano primero)</label>
-                <div className="flex flex-wrap gap-2">
-                  {sortedVendorsFor(estimate).map((v) => (
-                    <button
-                      key={v.id}
-                      onClick={() => assign(estimate.id, v.id)}
-                      className="rounded-md border border-brand bg-white px-3 py-1 text-sm hover:bg-brand-light"
-                    >
-                      {v.user.name}
-                      {v.distanceKm != null ? ` · ${v.distanceKm.toFixed(1)} km` : ""}
-                      {` · cola: ${v.queue}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <AssignVendorPicker estimate={estimate} onAssign={(vendorId) => assign(estimate.id, vendorId)} />
             </div>
           ))}
           {pending.length === 0 && <p className="text-sm text-neutral-500">No hay estimados pendientes.</p>}
@@ -192,6 +164,51 @@ export default function SecretariaDashboard() {
           </table>
         </div>
       </section>
+    </div>
+  );
+}
+
+function AssignVendorPicker({
+  estimate,
+  onAssign
+}: {
+  estimate: EstimateDTO;
+  onAssign: (vendorId: string) => void;
+}) {
+  const [nearby, setNearby] = useState<NearbyVendor[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/estimates/${estimate.id}/nearby-vendors`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setNearby(data.vendors || []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [estimate.id]);
+
+  return (
+    <div className="mt-2">
+      <label className="block text-sm font-medium mb-1">Asignar a vendedor (más cercano primero)</label>
+      {nearby == null ? (
+        <p className="text-sm text-neutral-500">Calculando tiempos de viaje...</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {nearby.map((v) => (
+            <button
+              key={v.id}
+              onClick={() => onAssign(v.id)}
+              className="rounded-md border border-brand bg-white px-3 py-1 text-sm hover:bg-brand-light"
+            >
+              {v.name}
+              {v.travelMinutes != null ? ` · ${Math.round(v.travelMinutes)} min${v.estimated ? " (aprox.)" : ""}` : ""}
+              {` · cola: ${v.queue}`}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ type VendorStat = {
   pendingQueue: number;
   minutesOnCurrent: number | null;
   estimatedFreeInMinutes: number;
+  usesRealTravelTimes: boolean;
   closingRate: number | null;
 };
 
@@ -80,7 +81,14 @@ export default function AdminDashboard() {
                 <td className="px-3 py-2">
                   {v.minutesOnCurrent != null ? `${v.minutesOnCurrent} min` : "—"}
                 </td>
-                <td className="px-3 py-2">{v.estimatedFreeInMinutes} min</td>
+                <td className="px-3 py-2">
+                  {v.estimatedFreeInMinutes} min
+                  {v.usesRealTravelTimes && (
+                    <span className="ml-1 text-xs text-green-700" title="Incluye tiempo de viaje real (Google Maps)">
+                      ✓
+                    </span>
+                  )}
+                </td>
                 <td className="px-3 py-2">{v.closingRate != null ? `${v.closingRate}%` : "—"}</td>
               </tr>
             ))}
@@ -88,8 +96,9 @@ export default function AdminDashboard() {
         </table>
       </section>
       <p className="text-xs text-neutral-400">
-        * "Libre en" es un estimado usando 20 min por visita. La integración con Google Maps (fase 2) lo hará
-        más preciso considerando tráfico y distancia real entre paradas.
+        * "Libre en" = 20 min por visita + tiempo de viaje. El check verde (✓) indica que el tiempo de viaje
+        es real (Google Maps con tráfico); sin el check, es una aproximación porque aún no hay tiempo de viaje
+        calculado para esa cola.
       </p>
     </div>
   );

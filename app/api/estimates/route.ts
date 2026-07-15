@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { geocodeAddress, haversineKm } from "@/lib/geo";
+import { geocodeAddress, getTravelInfo } from "@/lib/geo";
 
 const createSchema = z.object({
   clientName: z.string().min(1),
@@ -41,13 +41,16 @@ export async function POST(req: NextRequest) {
   const geo = await geocodeAddress(address);
 
   let distanceKm: number | null = null;
+  let travelMinutes: number | null = null;
   let status: "PENDING" | "ASSIGNED" = "PENDING";
   let assignedAt: Date | null = null;
 
   if (vendorId && geo) {
     const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
     if (vendor?.lat != null && vendor?.lng != null) {
-      distanceKm = haversineKm(vendor.lat, vendor.lng, geo.lat, geo.lng);
+      const travel = await getTravelInfo({ lat: vendor.lat, lng: vendor.lng }, geo);
+      distanceKm = travel.km;
+      travelMinutes = travel.minutes;
     }
     status = "ASSIGNED";
     assignedAt = new Date();
@@ -62,6 +65,7 @@ export async function POST(req: NextRequest) {
       lng: geo?.lng,
       vendorId: vendorId || null,
       distanceKm,
+      travelMinutes,
       status,
       assignedAt
     }

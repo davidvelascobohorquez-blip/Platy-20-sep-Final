@@ -30,6 +30,11 @@ export async function GET() {
       ? Math.round((now - new Date(current.startedAt).getTime()) / 60000)
       : null;
     const sold = completed.filter((e) => e.result?.sold);
+    const estimatedFreeInMinutes = queue.reduce(
+      (sum, e) => sum + (e.travelMinutes ?? 0) + MINUTES_PER_VISIT,
+      0
+    );
+    const usesRealTravelTimes = queue.some((e) => e.travelMinutes != null);
 
     return {
       id: v.id,
@@ -41,7 +46,8 @@ export async function GET() {
       completedCount: completed.length,
       pendingQueue: queue.length,
       minutesOnCurrent,
-      estimatedFreeInMinutes: queue.length * MINUTES_PER_VISIT,
+      estimatedFreeInMinutes: Math.round(estimatedFreeInMinutes),
+      usesRealTravelTimes,
       closingRate: completed.length ? Math.round((sold.length / completed.length) * 100) : null
     };
   });

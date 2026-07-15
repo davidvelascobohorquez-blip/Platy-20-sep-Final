@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { haversineKm } from "@/lib/geo";
+import { getTravelInfo } from "@/lib/geo";
 
 const patchSchema = z.object({
   vendorId: z.string().optional(),
@@ -32,7 +32,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (estimate.lat != null && estimate.lng != null) {
       const vendor = await prisma.vendor.findUnique({ where: { id: parsed.data.vendorId } });
       if (vendor?.lat != null && vendor?.lng != null) {
-        data.distanceKm = haversineKm(vendor.lat, vendor.lng, estimate.lat, estimate.lng);
+        const travel = await getTravelInfo(
+          { lat: vendor.lat, lng: vendor.lng },
+          { lat: estimate.lat, lng: estimate.lng }
+        );
+        data.distanceKm = travel.km;
+        data.travelMinutes = travel.minutes;
       }
     }
   }

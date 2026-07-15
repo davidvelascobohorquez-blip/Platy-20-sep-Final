@@ -39,6 +39,7 @@ model Estimate {
   vendorId     String?
   vendor       Vendor?         @relation(fields: [vendorId], references: [id])
   distanceKm   Float?
+  travelMinutes Float?
   assignedAt   DateTime?
   startedAt    DateTime?
   completedAt  DateTime?

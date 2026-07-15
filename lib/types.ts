@@ -1,12 +1,3 @@
-export type VendorDTO = {
-  id: string;
-  lat: number | null;
-  lng: number | null;
-  active: boolean;
-  user: { name: string };
-  estimates: { id: string }[];
-};
-
 export type EstimateDTO = {
   id: string;
   clientName: string;
@@ -17,6 +8,7 @@ export type EstimateDTO = {
   status: "PENDING" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
   vendorId: string | null;
   distanceKm: number | null;
+  travelMinutes: number | null;
   assignedAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
