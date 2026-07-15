@@ -1,55 +1,48 @@
-# PLATY — Starter PRO
+# Chip and Weight — True Services
 
-### Qué incluye
-- Landing minimalista (Next 14 + Tailwind)
-- Wizard `/demo` (datos, licencia de por vida, 3 intentos)
-- API `/api/generate-menu` con OpenAI (o fallback) + cantidades + costos COP
-- PDF diseñado con @react-pdf/renderer
-- Pricebook local (`data/pricebook.co.json`)
+App de gestión de estimados, ventas y trabajos para una empresa de corte de árboles.
 
-### Variables de entorno
-- `OPENAI_API_KEY` (recomendado)
-- `PLATY_LIFETIME_CODE` (p. ej. PLATY-2025-LIFE)
-- `NEXT_PUBLIC_DOMAIN` (opcional, para textos visibles)
+## Roles
 
-### Dev local
-```
-npm i
+- **Secretaria** (`/secretaria`): recibe estimados (nombre, dirección, franja horaria) y los asigna al vendedor más cercano.
+- **Vendedor** (`/vendedor`): activa su ubicación en vivo, ve sus estimados asignados, actualiza el estado y registra el resultado (vendido/no, alcance del trabajo, monto, notas).
+- **Administrador** (`/admin`): tablero con estado de cada vendedor (completados, en cola, tiempo en el estimado actual, tiempo estimado de disponibilidad) y tasa de cierre / ventas totales.
+- **Cuadrilla** (`/cuadrilla`): módulo de trabajos programados del día siguiente — pendiente para Fase 3.
+
+## Alcance de esta Fase 1 (MVP)
+
+Incluido:
+- Autenticación por rol (cookie firmada con JWT).
+- Creación de estimados + geocoding de dirección (Nominatim, gratuito).
+- Asignación manual sugerida por cercanía (distancia en línea recta, fórmula de Haversine).
+- Actualización de ubicación del vendedor vía Geolocation API del navegador.
+- Flujo de estado del estimado: pendiente → asignado → en progreso → completado.
+- Registro de resultado (vendido, alcance, monto, notas).
+- Dashboard de administrador con métricas básicas.
+
+Pendiente para próximas fases:
+- **Fase 2**: Integración real con Google Maps (rutas, tiempo de viaje, tráfico) en vez de distancia en línea recta; métricas de cola más precisas.
+- **Fase 3**: Módulo de cuadrilla con trabajos programados y métodos de pago (cash / cheque / tarjeta +5%).
+- **Fase 4**: Fotos, notas para la cuadrilla, notificaciones push.
+
+## Desarrollo local
+
+```bash
+npm install
+cp .env.example .env
+npm run db:push
+npm run db:seed   # crea usuarios de prueba, contraseña: demo1234
 npm run dev
 ```
 
-### Deploy en Vercel
-Importa el repo → añade variables → Deploy.
+Usuarios de prueba (contraseña `demo1234` para todos):
+- admin@trueservices.com
+- secretaria@trueservices.com
+- vendedor1@trueservices.com / vendedor2@trueservices.com
+- cuadrilla@trueservices.com
 
+## Variables de entorno
 
-### Pago con Wompi
-Configura en Vercel el env `NEXT_PUBLIC_WOMPI_LINK` con tu enlace de pago de Wompi (Payment Link). El botón **Comprar** y la página `/checkout` redirigen allí.
-
-
-### Acceso vitalicio (sin backend complejo)
-- Protegemos `/pro` con una cookie firmada `platy_access`.
-- Tras el pago en Wompi, el usuario vuelve a `/thanks?id=TRANSACTION_ID&email=...`.
-- El API `/api/wompi/verify` consulta la transacción con `WOMPI_PRIVATE_KEY` en `WOMPI_API_BASE` (production/sandbox), y si está `APPROVED`, emite la cookie.
-- Configura en Vercel:
-  - `ACCESS_COOKIE_SECRET` (cadena aleatoria segura)
-  - `WOMPI_PRIVATE_KEY` (llave privada de Wompi)
-  - `WOMPI_API_BASE` (ej: `https://production.wompi.co` o `https://sandbox.wompi.co`)
-  - `NEXT_PUBLIC_WOMPI_LINK` (Payment Link para `/checkout`)
-
-### URL de retorno en Wompi
-Apunta el return URL de tu link/botón a `/thanks` y agrega `?id={{transaction.id}}&email={{customer.email}}` si tu flujo lo permite.
-
-
-### Panel /admin
-- Protegido por cookie de administrador (login con `ADMIN_PASSWORD`, sesión 48h).
-- Ver **transacciones recientes** de Wompi (20) con estado.
-- **Generar acceso manual**: crea link de activación (48h). Al abrirlo, se emite cookie `platy_access` y redirige a `/pro`.
-- Variables adicionales:
-  - `ADMIN_PASSWORD` (requerida).
-
-
-### Webhook de Wompi
-- Configura en Wompi → Programadores → URL de eventos: `https://TU-DOMINIO.vercel.app/api/wompi/webhook`
-- Agrega en Vercel la variable `WOMPI_EVENTS_SECRET` con el **Secreto de Eventos**.
-- El webhook valida firma y además verifica el estado real con `/api/wompi/tx` (APPROVED).
-
+- `DATABASE_URL`: conexión de la base de datos (SQLite por defecto, migrar a Postgres en producción).
+- `SESSION_SECRET`: secreto para firmar la sesión (cámbialo en producción).
+- `GOOGLE_MAPS_API_KEY`: pendiente de agregar en la Fase 2 para reemplazar el geocoding gratuito y calcular rutas reales.
