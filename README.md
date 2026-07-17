@@ -20,16 +20,22 @@ Incluido:
 - Registro de resultado (vendido, alcance, monto, notas).
 - Dashboard de administrador con métricas básicas.
 
+Fase 2 (completada): geocoding + tiempos de viaje reales con Google Maps (Geocoding API +
+Distance Matrix API con tráfico), con fallback automático a Nominatim + aproximación por
+velocidad promedio si no hay `GOOGLE_MAPS_API_KEY`.
+
 Pendiente para próximas fases:
-- **Fase 2**: Integración real con Google Maps (rutas, tiempo de viaje, tráfico) en vez de distancia en línea recta; métricas de cola más precisas.
 - **Fase 3**: Módulo de cuadrilla con trabajos programados y métodos de pago (cash / cheque / tarjeta +5%).
 - **Fase 4**: Fotos, notas para la cuadrilla, notificaciones push.
 
 ## Desarrollo local
 
+Necesitas una base de datos Postgres (puede ser gratuita: [Neon](https://neon.tech),
+[Supabase](https://supabase.com), o Vercel Postgres).
+
 ```bash
 npm install
-cp .env.example .env
+cp .env.example .env   # completa DATABASE_URL con tu Postgres y GOOGLE_MAPS_API_KEY
 npm run db:push
 npm run db:seed   # crea usuarios de prueba, contraseña: demo1234
 npm run dev
@@ -41,8 +47,22 @@ Usuarios de prueba (contraseña `demo1234` para todos):
 - vendedor1@trueservices.com / vendedor2@trueservices.com
 - cuadrilla@trueservices.com
 
+## Despliegue en Vercel
+
+1. Crea una base de datos Postgres (Vercel → pestaña "Storage" → "Create Database" es lo más
+   simple, o usa Neon/Supabase).
+2. En Vercel, importa este repositorio y selecciona la rama `chip-and-weight-app`.
+3. Agrega las variables de entorno del proyecto:
+   - `DATABASE_URL`: la cadena de conexión de tu Postgres.
+   - `SESSION_SECRET`: una cadena aleatoria larga.
+   - `GOOGLE_MAPS_API_KEY`: tu llave de Google Maps (Geocoding + Distance Matrix habilitadas).
+4. Deploy. El comando de build ya incluye `prisma db push`, así que la primera vez que
+   despliegues se crean las tablas automáticamente.
+5. Corre el seed una sola vez apuntando a la base de datos de producción (desde tu máquina):
+   `DATABASE_URL="<la de producción>" npm run db:seed`.
+
 ## Variables de entorno
 
-- `DATABASE_URL`: conexión de la base de datos (SQLite por defecto, migrar a Postgres en producción).
+- `DATABASE_URL`: conexión Postgres (local o de producción).
 - `SESSION_SECRET`: secreto para firmar la sesión (cámbialo en producción).
-- `GOOGLE_MAPS_API_KEY`: pendiente de agregar en la Fase 2 para reemplazar el geocoding gratuito y calcular rutas reales.
+- `GOOGLE_MAPS_API_KEY`: habilita geocoding y tiempos de viaje reales con tráfico.
