@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { EstimateDTO, STATUS_LABEL } from "@/lib/types";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 type NearbyVendor = {
   id: string;
@@ -15,6 +16,7 @@ type NearbyVendor = {
 export default function SecretariaDashboard() {
   const [clientName, setClientName] = useState("");
   const [address, setAddress] = useState("");
+  const [addressPlace, setAddressPlace] = useState<{ lat: number; lng: number } | null>(null);
   const [timeWindow, setTimeWindow] = useState("Todo el día");
   const [customWindow, setCustomWindow] = useState("");
   const [estimates, setEstimates] = useState<EstimateDTO[]>([]);
@@ -39,7 +41,13 @@ export default function SecretariaDashboard() {
     const res = await fetch("/api/estimates", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientName, address, timeWindow: finalWindow })
+      body: JSON.stringify({
+        clientName,
+        address,
+        timeWindow: finalWindow,
+        lat: addressPlace?.lat,
+        lng: addressPlace?.lng
+      })
     });
     setSubmitting(false);
     if (!res.ok) {
@@ -49,6 +57,7 @@ export default function SecretariaDashboard() {
     }
     setClientName("");
     setAddress("");
+    setAddressPlace(null);
     setTimeWindow("Todo el día");
     setCustomWindow("");
     load();
@@ -82,11 +91,16 @@ export default function SecretariaDashboard() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Dirección</label>
-            <input
-              required
+            <AddressAutocomplete
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2"
+              onChange={(value) => {
+                setAddress(value);
+                setAddressPlace(null);
+              }}
+              onSelect={({ address: selected, lat, lng }) => {
+                setAddress(selected);
+                setAddressPlace({ lat, lng });
+              }}
             />
           </div>
           <div>

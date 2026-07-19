@@ -8,7 +8,9 @@ const createSchema = z.object({
   clientName: z.string().min(1),
   address: z.string().min(1),
   timeWindow: z.string().min(1),
-  vendorId: z.string().optional()
+  vendorId: z.string().optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional()
 });
 
 export async function GET(req: NextRequest) {
@@ -38,7 +40,10 @@ export async function POST(req: NextRequest) {
   }
   const { clientName, address, timeWindow, vendorId } = parsed.data;
 
-  const geo = await geocodeAddress(address);
+  const geo =
+    parsed.data.lat != null && parsed.data.lng != null
+      ? { lat: parsed.data.lat, lng: parsed.data.lng }
+      : await geocodeAddress(address);
 
   let distanceKm: number | null = null;
   let travelMinutes: number | null = null;
