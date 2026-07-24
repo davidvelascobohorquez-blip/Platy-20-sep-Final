@@ -22,12 +22,21 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
   return scriptLoadingPromise;
 }
 
+/**
+ * El input NO es un componente controlado por React (no recibe `value`): el widget de
+ * Google Places manipula el DOM del input directamente, y si React también fuerza su
+ * valor en cada tecla (patrón controlado), ambos compiten y solo queda el último
+ * carácter escrito. Por eso aquí se usa `defaultValue` + lectura por ref, y el padre
+ * limpia el campo cambiando `resetKey` para forzar un remount en vez de resetear `value`.
+ */
 export default function AddressAutocomplete({
-  value,
+  defaultValue = "",
+  resetKey,
   onChange,
   onSelect
 }: {
-  value: string;
+  defaultValue?: string;
+  resetKey?: string | number;
   onChange: (value: string) => void;
   onSelect: (place: { address: string; lat: number; lng: number }) => void;
 }) {
@@ -58,6 +67,7 @@ export default function AddressAutocomplete({
           const address = place.formatted_address;
           const lat = place.geometry.location.lat();
           const lng = place.geometry.location.lng();
+          if (inputRef.current) inputRef.current.value = address;
           onChange(address);
           onSelect({ address, lat, lng });
         });
@@ -69,14 +79,15 @@ export default function AddressAutocomplete({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [resetKey]);
 
   return (
     <div>
       <input
+        key={resetKey}
         ref={inputRef}
         required
-        value={value}
+        defaultValue={defaultValue}
         onChange={(e) => onChange(e.target.value)}
         placeholder={ready ? "Empieza a escribir la dirección..." : "Dirección"}
         className="w-full rounded-md border border-neutral-300 px-3 py-2"

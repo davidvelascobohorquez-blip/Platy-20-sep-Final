@@ -17,6 +17,7 @@ export default function SecretariaDashboard() {
   const [clientName, setClientName] = useState("");
   const [address, setAddress] = useState("");
   const [addressPlace, setAddressPlace] = useState<{ lat: number; lng: number } | null>(null);
+  const [addressFieldKey, setAddressFieldKey] = useState(0);
   const [timeWindow, setTimeWindow] = useState("Todo el día");
   const [customWindow, setCustomWindow] = useState("");
   const [estimates, setEstimates] = useState<EstimateDTO[]>([]);
@@ -58,6 +59,7 @@ export default function SecretariaDashboard() {
     setClientName("");
     setAddress("");
     setAddressPlace(null);
+    setAddressFieldKey((k) => k + 1);
     setTimeWindow("Todo el día");
     setCustomWindow("");
     load();
@@ -92,7 +94,7 @@ export default function SecretariaDashboard() {
           <div>
             <label className="block text-sm font-medium mb-1">Dirección</label>
             <AddressAutocomplete
-              value={address}
+              resetKey={addressFieldKey}
               onChange={(value) => {
                 setAddress(value);
                 setAddressPlace(null);
